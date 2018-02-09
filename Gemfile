@@ -104,6 +104,6 @@ gem 'ransack'
 gem 'state_machines-activerecord'
 gem 'carrierwave'
 gem 'fog'
-gem 'aws-sdk', '~> 1.66.0'
+gem 'aws-sdk', '~> 2'
 gem 'capistrano-faster-assets'
 gem "rack-cors", :require => "rack/cors"

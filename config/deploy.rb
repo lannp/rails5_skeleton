@@ -1,11 +1,13 @@
 # config valid only for current version of Capistrano
-lock "3.8.1"
+lock "3.10.1"
 require 'active_support/core_ext/string'
+require_relative "deploy/aws_utils"
 
 set :application, ENV["REPO_URL"].split("/").last.gsub(".git","").underscore.camelize
 set :repo_url, ENV["REPO_URL"]
 set :assets_roles, [:app]
 set :deploy_ref, ENV["DEPLOY_REF"]
+set :deploy_ref_type, ENV["DEPLOY_REF_TYPE"]
 set :bundle_binstubs, ->{shared_path.join("bin")}
 
 if fetch(:deploy_ref)
@@ -16,6 +18,8 @@ end
 
 set :rvm_ruby_version, "2.4.1"
 set :deploy_to, "/usr/local/rails_apps/#{fetch :application}"
+set :settings, YAML.load_file(ENV["SETTING_FILE"] ||"config/deploy/settings.yml")
+set :instances, get_ec2_targets unless ENV["LOCAL_DEPLOY"]
 case ENV["WEB_SERVER"]
 when "passenger"
   set :passenger_roles, :app
@@ -79,7 +83,10 @@ namespace :deploy do
   task :update_ec2_tags do
     on roles(:app) do
       within "#{release_path}" do
-        execute :rake, "tag:update_ec2_tags" if fetch(:stage) == :production
+        branch = fetch(:branch)
+        ref_type = fetch(:deploy_ref_type)
+        last_commit = ref_type == 'branch' ? `git rev-parse #{branch.split('/')[1]}` : `git rev-list -n 1 #{branch}`
+        update_ec2_tags ref_type, branch, last_commit if fetch(:stage) == :production
       end
     end
   end
